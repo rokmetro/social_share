@@ -28,60 +28,59 @@ NSString* _stringValue(NSObject* value);
             stories = @"facebook-stories";
         }
 
-        NSString *stickerImage = call.arguments[@"stickerImage"];
-        NSString *backgroundTopColor = call.arguments[@"backgroundTopColor"];
-        NSString *backgroundBottomColor = call.arguments[@"backgroundBottomColor"];
-        NSString *attributionURL = call.arguments[@"attributionURL"];
-        NSString *backgroundImage = call.arguments[@"backgroundImage"];
-        NSString *backgroundVideo = call.arguments[@"backgroundVideo"];
+        NSString *stickerImage = _stringValue(call.arguments[@"stickerImage"]);
+        NSString *backgroundTopColor = _stringValue(call.arguments[@"backgroundTopColor"]);
+        NSString *backgroundBottomColor = _stringValue(call.arguments[@"backgroundBottomColor"]);
+        NSString *attributionURL = _stringValue(call.arguments[@"attributionURL"]);
+        NSString *backgroundImage = _stringValue(call.arguments[@"backgroundImage"]);
+        NSString *backgroundVideo = _stringValue(call.arguments[@"backgroundVideo"]);
+        NSString *appId = _stringValue(call.arguments[@"appId"]);
         
+
         NSFileManager *fileManager = [NSFileManager defaultManager];
 
-        NSString *appId = call.arguments[@"appId"];
-        if ([backgroundTopColor isKindOfClass:[NSNull class]]) {
+        if (appId.length == 0) {
             NSString *path = [[NSBundle mainBundle] pathForResource:@"Info" ofType:@"plist"];
             NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:path];
-            appId = [dict objectForKey:@"FacebookAppID"];
-        }
-        
-        NSData *imgShare;
-        if ( [fileManager fileExistsAtPath: stickerImage]) {
-           imgShare = [[NSData alloc] initWithContentsOfFile:stickerImage];
+            appId = _stringValue([dict objectForKey:@"FacebookAppID"]);
         }
         
         // Assign background image asset and attribution link URL to pasteboard
-        NSMutableDictionary *pasteboardItems = [[NSMutableDictionary alloc]initWithDictionary: @{[NSString stringWithFormat:@"%@.stickerImage",destination] : imgShare}];
-        
-        if (![backgroundTopColor isKindOfClass:[NSNull class]]) {
-            [pasteboardItems setObject:backgroundTopColor forKey:[NSString stringWithFormat:@"%@.backgroundTopColor",destination]];
+        NSMutableDictionary *pasteboardItems = [[NSMutableDictionary alloc] init];
+
+        if ( (0 < stickerImage.length) && [fileManager fileExistsAtPath: stickerImage]) {
+           NSData *imgShare = [[NSData alloc] initWithContentsOfFile:stickerImage];
+           [pasteboardItems setObject:imgShare forKey:[NSString stringWithFormat:@"%@.stickerImage", destination]];
         }
         
-        if (![backgroundBottomColor isKindOfClass:[NSNull class]]) {
+        if (0 < backgroundTopColor.length) {
+            [pasteboardItems setObject:backgroundTopColor forKey:[NSString stringWithFormat:@"%@.backgroundTopColor", destination]];
+        }
+        
+        if (0 < backgroundBottomColor.length) {
             [pasteboardItems setObject:backgroundBottomColor forKey:[NSString stringWithFormat:@"%@.backgroundBottomColor",destination]];
         }
         
-        if (![attributionURL isKindOfClass:[NSNull class]]) {
-            [pasteboardItems setObject:attributionURL forKey:[NSString stringWithFormat:@"%@.contentURL",destination]];
+        if (0 < attributionURL.length) {
+            [pasteboardItems setObject:attributionURL forKey:[NSString stringWithFormat:@"%@.contentURL", destination]];
         }
         
-        if (![appId isKindOfClass:[NSNull class]] && [@"shareFacebookStory" isEqualToString:call.method]) {
-            [pasteboardItems setObject:appId forKey:[NSString stringWithFormat:@"%@.appID",destination]];
+        if ((0 < appId.length) && [@"shareFacebookStory" isEqualToString:call.method]) {
+            [pasteboardItems setObject:appId forKey:[NSString stringWithFormat:@"%@.appID", destination]];
         }
         
         //if you have a background image
-        NSData *imgBackgroundShare;
-        if ([fileManager fileExistsAtPath: backgroundImage]) {
-            imgBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundImage];
-            [pasteboardItems setObject:imgBackgroundShare forKey:[NSString stringWithFormat:@"%@.backgroundImage",destination]];
+        if ((0 < backgroundImage.length) && [fileManager fileExistsAtPath: backgroundImage]) {
+            NSData *imgBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundImage];
+            [pasteboardItems setObject:imgBackgroundShare forKey:[NSString stringWithFormat:@"%@.backgroundImage", destination]];
         }
         //if you have a background video
-        NSData *videoBackgroundShare;
-        if ([fileManager fileExistsAtPath: backgroundVideo]) {
-            videoBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundVideo options:NSDataReadingMappedIfSafe error:nil];
+        if ((0 < backgroundVideo.length) && [fileManager fileExistsAtPath: backgroundVideo]) {
+            NSData *videoBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundVideo options:NSDataReadingMappedIfSafe error:nil];
             [pasteboardItems setObject:videoBackgroundShare forKey:[NSString stringWithFormat:@"%@.backgroundVideo",destination]];
         }
 
-        NSURL *urlScheme = [NSURL URLWithString:[NSString stringWithFormat:@"%@://share?source_application=%@", stories,appId]];
+        NSURL *urlScheme = [NSURL URLWithString:[NSString stringWithFormat:@"%@://share?source_application=%@", stories, appId]];
         
         if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
 
