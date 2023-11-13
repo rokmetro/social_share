@@ -82,7 +82,7 @@ NSString* _stringValue(NSObject* value);
 
         NSURL *urlScheme = [NSURL URLWithString:[NSString stringWithFormat:@"%@://share?source_application=%@", stories, appId]];
         
-        if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
+        if ((urlScheme != nil) && [[UIApplication sharedApplication] canOpenURL:urlScheme]) {
 
             if (@available(iOS 10.0, *)) {
             NSDictionary *pasteboardOptions = @{UIPasteboardOptionExpirationDate : [[NSDate date] dateByAddingTimeInterval:60 * 5]};
@@ -100,17 +100,16 @@ NSString* _stringValue(NSObject* value);
     }
     else if ([@"copyToClipboard" isEqualToString:call.method]) {
         
-        NSString *content = call.arguments[@"content"];
+        NSString *content = _stringValue(call.arguments[@"content"]);
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         //assigning content to pasteboard
-         if (![content isKindOfClass:[NSNull class]]) {
+         if (0 < content.length) {
             pasteboard.string = content;
         }
         //assigning image to pasteboard
-        NSString *image = call.arguments[@"image"];
-        UIImage *imageData;
-        if ([[NSFileManager defaultManager] fileExistsAtPath: image]) {
-            imageData = [[UIImage alloc] initWithContentsOfFile:image];
+        NSString *image = _stringValue(call.arguments[@"image"]);
+        if ((0 < image.length) && [[NSFileManager defaultManager] fileExistsAtPath: image]) {
+            UIImage *imageData = [[UIImage alloc] initWithContentsOfFile:image];
             pasteboard.image = imageData;
         }
         
@@ -147,7 +146,7 @@ NSString* _stringValue(NSObject* value);
         NSString *smsBodyEscaped = [smsBody stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
 				NSString *smsUrlString = [NSString stringWithFormat:@"sms:&body=%@", smsBodyEscaped];
         NSURL *smsUrl = [NSURL URLWithString: smsUrlString];
-				if ([[UIApplication sharedApplication] canOpenURL:smsUrl]) {
+				if ((smsUrl != nil) && [[UIApplication sharedApplication] canOpenURL:smsUrl]) {
 						if (@available(iOS 10.0, *)) {
 								[[UIApplication sharedApplication] openURL:smsUrl options:@{} completionHandler:nil];
 								result(@"success");
@@ -161,10 +160,10 @@ NSString* _stringValue(NSObject* value);
         //NSString *content = call.arguments[@"content"];
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareWhatsapp" isEqualToString:call.method]) {
-        NSString *content = call.arguments[@"content"];
+        NSString *content = _stringValue(call.arguments[@"content"]);
         NSString * urlWhats = [NSString stringWithFormat:@"whatsapp://send?text=%@",content];
         NSURL * whatsappURL = [NSURL URLWithString:[urlWhats stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-        if ([[UIApplication sharedApplication] canOpenURL: whatsappURL]) {
+        if ((whatsappURL != nil) && [[UIApplication sharedApplication] canOpenURL: whatsappURL]) {
             [[UIApplication sharedApplication] openURL: whatsappURL];
             result(@"success");
         } else {
@@ -172,10 +171,10 @@ NSString* _stringValue(NSObject* value);
         }
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareTelegram" isEqualToString:call.method]) {
-        NSString *content = call.arguments[@"content"];
+        NSString *content = _stringValue(call.arguments[@"content"]);
         NSString * urlScheme = [NSString stringWithFormat:@"tg://msg?text=%@",content];
         NSURL * telegramURL = [NSURL URLWithString:[urlScheme stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-        if ([[UIApplication sharedApplication] canOpenURL: telegramURL]) {
+        if ((telegramURL != nil) && [[UIApplication sharedApplication] canOpenURL: telegramURL]) {
             [[UIApplication sharedApplication] openURL: telegramURL];
             result(@"success");
         } else {
@@ -184,7 +183,7 @@ NSString* _stringValue(NSObject* value);
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareOptions" isEqualToString:call.method]) {
         NSString *content = _stringValue(call.arguments[@"content"]);
-        NSString *image = (call.arguments[@"image"]);
+        NSString *image = _stringValue(call.arguments[@"image"]);
         NSMutableArray *objectsToShare = [[NSMutableArray alloc] init];
         
 				//checking if it contains text
