@@ -6,6 +6,8 @@
 #import "SocialSharePlugin.h"
 #include <objc/runtime.h>
 
+NSString* _stringValue(NSObject* value);
+
 @implementation SocialSharePlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   FlutterMethodChannel* channel = [FlutterMethodChannel methodChannelWithName:@"social_share" binaryMessenger:[registrar messenger]];
@@ -129,73 +131,33 @@
         }
     
     } else if ([@"shareSms" isEqualToString:call.method]) {
-        NSString *msg = call.arguments[@"message"];
-        NSString *urlstring = call.arguments[@"urlLink"];
-        NSString *trailingText = call.arguments[@"trailingText"];
-
-        NSURL *urlScheme = [NSURL URLWithString:@"sms://"];
-
-        NSString* urlTextEscaped = [urlstring stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-        NSURL *url = [NSURL URLWithString: urlTextEscaped];
-        //check if it contains a link
-        if ( [ [url absoluteString]  length] == 0 ) {
-            //if it doesn't contains a link
-            NSString *urlSchemeSms = [NSString stringWithFormat:@"sms:?&body=%@",msg];
-            NSURL *urlScheme = [NSURL URLWithString:urlSchemeSms];
-            if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
-                if (@available(iOS 10.0, *)) {
-                    [[UIApplication sharedApplication] openURL:urlScheme options:@{} completionHandler:nil];
-                    result(@"success");
-                } else {
-                    result(@"error");
-                }
-            } else {
-                result(@"error");
-            }
-        } else {
-            //if it does contains a link
-            //check if trailing text equals null
-            if ( [ trailingText   length] == 0 ) {
-                //if trailing text is null
-                //url scheme with normal text message
-                NSString *urlSchemeSms = [NSString stringWithFormat:@"sms:?&body=%@",msg];
-                //appending url with normal text and url scheme
-                NSString *urlWithLink = [urlSchemeSms stringByAppendingString:[url absoluteString]];
-                //final urlscheme
-                NSURL *urlSchemeMsg = [NSURL URLWithString:urlWithLink];
-                if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
-                    if (@available(iOS 10.0, *)) {
-                        [[UIApplication sharedApplication] openURL:urlSchemeMsg options:@{} completionHandler:nil];
-                        result(@"success");
-                    } else {
-                        result(@"error");
-                    }
-                } else {
-                    result(@"error");
-                }
-            } else {
-                //if trailing text is not null
-                NSString *urlSchemeSms = [NSString stringWithFormat:@"sms:?&body=%@",msg];
-                //appending url with normal text and url scheme
-                NSString *urlWithLink = [urlSchemeSms stringByAppendingString:[url absoluteString]];
-                NSString *finalUrl = [urlWithLink stringByAppendingString:trailingText];
-
-                //final urlscheme
-                NSURL *urlSchemeMsg = [NSURL URLWithString:finalUrl];
-                if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
-                    if (@available(iOS 10.0, *)) {
-                        [[UIApplication sharedApplication] openURL:urlSchemeMsg options:@{} completionHandler:nil];
-                        result(@"success");
-                    } else {
-                        result(@"error");
-                    }
-                } else {
-                    result(@"error");
-
-                }
-            }
+        NSString *msg = _stringValue(call.arguments[@"message"]);
+        NSString *urlLink = _stringValue(call.arguments[@"urlLink"]);
+        NSString *trailingText = _stringValue(call.arguments[@"trailingText"]);
         
-        }
+        NSMutableString *smsBody = [[NSMutableString alloc] init];
+        if (0 < msg.length) {
+	        [smsBody appendString: msg];
+				}
+				if (0 < urlLink.length) {
+	        [smsBody appendString: urlLink];
+				}
+				if (0 < trailingText.length) {
+	        [smsBody appendString: trailingText];
+				}
+        NSString *smsBodyEscaped = [smsBody stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+				NSString *smsUrlString = [NSString stringWithFormat:@"sms:&body=%@", smsBodyEscaped];
+        NSURL *smsUrl = [NSURL URLWithString: smsUrlString];
+				if ([[UIApplication sharedApplication] canOpenURL:smsUrl]) {
+						if (@available(iOS 10.0, *)) {
+								[[UIApplication sharedApplication] openURL:smsUrl options:@{} completionHandler:nil];
+								result(@"success");
+						} else {
+								result(@"error");
+						}
+				} else {
+					result(@"error");
+				}
     } else if ([@"shareSlack" isEqualToString:call.method]) {
         //NSString *content = call.arguments[@"content"];
         result([NSNumber numberWithBool:YES]);
@@ -290,3 +252,7 @@
 }
 
 @end
+
+NSString* _stringValue(NSObject* value) {
+	return [value isKindOfClass:[NSString class]] ? value : nil;
+}
