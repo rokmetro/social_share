@@ -117,7 +117,7 @@ NSString* _stringValue(NSObject* value);
         result(@"success");
         
     } else if ([@"shareTwitter" isEqualToString:call.method]) {
-        NSString *captionText = call.arguments[@"captionText"];
+        NSString *captionText = _stringValue(call.arguments[@"captionText"]);
         
         NSString *urlSchemeTwitter = [NSString stringWithFormat:@"twitter://post?message=%@",captionText];
         NSString* urlTextEscaped = [urlSchemeTwitter stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
