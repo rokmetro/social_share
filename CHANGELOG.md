@@ -1,3 +1,6 @@
+## Unreleased
+- Fixed crashes in iOS native handling  [#173](https://github.com/rokmetro/vogue-app/issues/173)
+
 ## 2.3.1
 
 ### Changes for the new version is done by [dpacchi](https://github.com/dpacchi) 🙌🙌

@@ -6,6 +6,8 @@
 #import "SocialSharePlugin.h"
 #include <objc/runtime.h>
 
+NSString* _stringValue(NSObject* value);
+
 @implementation SocialSharePlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   FlutterMethodChannel* channel = [FlutterMethodChannel methodChannelWithName:@"social_share" binaryMessenger:[registrar messenger]];
@@ -26,62 +28,61 @@
             stories = @"facebook-stories";
         }
 
-        NSString *stickerImage = call.arguments[@"stickerImage"];
-        NSString *backgroundTopColor = call.arguments[@"backgroundTopColor"];
-        NSString *backgroundBottomColor = call.arguments[@"backgroundBottomColor"];
-        NSString *attributionURL = call.arguments[@"attributionURL"];
-        NSString *backgroundImage = call.arguments[@"backgroundImage"];
-        NSString *backgroundVideo = call.arguments[@"backgroundVideo"];
+        NSString *stickerImage = _stringValue(call.arguments[@"stickerImage"]);
+        NSString *backgroundTopColor = _stringValue(call.arguments[@"backgroundTopColor"]);
+        NSString *backgroundBottomColor = _stringValue(call.arguments[@"backgroundBottomColor"]);
+        NSString *attributionURL = _stringValue(call.arguments[@"attributionURL"]);
+        NSString *backgroundImage = _stringValue(call.arguments[@"backgroundImage"]);
+        NSString *backgroundVideo = _stringValue(call.arguments[@"backgroundVideo"]);
+        NSString *appId = _stringValue(call.arguments[@"appId"]);
         
+
         NSFileManager *fileManager = [NSFileManager defaultManager];
 
-        NSString *appId = call.arguments[@"appId"];
-        if ([backgroundTopColor isKindOfClass:[NSNull class]]) {
+        if (appId.length == 0) {
             NSString *path = [[NSBundle mainBundle] pathForResource:@"Info" ofType:@"plist"];
             NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:path];
-            appId = [dict objectForKey:@"FacebookAppID"];
-        }
-        
-        NSData *imgShare;
-        if ( [fileManager fileExistsAtPath: stickerImage]) {
-           imgShare = [[NSData alloc] initWithContentsOfFile:stickerImage];
+            appId = _stringValue([dict objectForKey:@"FacebookAppID"]);
         }
         
         // Assign background image asset and attribution link URL to pasteboard
-        NSMutableDictionary *pasteboardItems = [[NSMutableDictionary alloc]initWithDictionary: @{[NSString stringWithFormat:@"%@.stickerImage",destination] : imgShare}];
-        
-        if (![backgroundTopColor isKindOfClass:[NSNull class]]) {
-            [pasteboardItems setObject:backgroundTopColor forKey:[NSString stringWithFormat:@"%@.backgroundTopColor",destination]];
+        NSMutableDictionary *pasteboardItems = [[NSMutableDictionary alloc] init];
+
+        if ( (0 < stickerImage.length) && [fileManager fileExistsAtPath: stickerImage]) {
+           NSData *imgShare = [[NSData alloc] initWithContentsOfFile:stickerImage];
+           [pasteboardItems setObject:imgShare forKey:[NSString stringWithFormat:@"%@.stickerImage", destination]];
         }
         
-        if (![backgroundBottomColor isKindOfClass:[NSNull class]]) {
+        if (0 < backgroundTopColor.length) {
+            [pasteboardItems setObject:backgroundTopColor forKey:[NSString stringWithFormat:@"%@.backgroundTopColor", destination]];
+        }
+        
+        if (0 < backgroundBottomColor.length) {
             [pasteboardItems setObject:backgroundBottomColor forKey:[NSString stringWithFormat:@"%@.backgroundBottomColor",destination]];
         }
         
-        if (![attributionURL isKindOfClass:[NSNull class]]) {
-            [pasteboardItems setObject:attributionURL forKey:[NSString stringWithFormat:@"%@.contentURL",destination]];
+        if (0 < attributionURL.length) {
+            [pasteboardItems setObject:attributionURL forKey:[NSString stringWithFormat:@"%@.contentURL", destination]];
         }
         
-        if (![appId isKindOfClass:[NSNull class]] && [@"shareFacebookStory" isEqualToString:call.method]) {
-            [pasteboardItems setObject:appId forKey:[NSString stringWithFormat:@"%@.appID",destination]];
+        if ((0 < appId.length) && [@"shareFacebookStory" isEqualToString:call.method]) {
+            [pasteboardItems setObject:appId forKey:[NSString stringWithFormat:@"%@.appID", destination]];
         }
         
         //if you have a background image
-        NSData *imgBackgroundShare;
-        if ([fileManager fileExistsAtPath: backgroundImage]) {
-            imgBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundImage];
-            [pasteboardItems setObject:imgBackgroundShare forKey:[NSString stringWithFormat:@"%@.backgroundImage",destination]];
+        if ((0 < backgroundImage.length) && [fileManager fileExistsAtPath: backgroundImage]) {
+            NSData *imgBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundImage];
+            [pasteboardItems setObject:imgBackgroundShare forKey:[NSString stringWithFormat:@"%@.backgroundImage", destination]];
         }
         //if you have a background video
-        NSData *videoBackgroundShare;
-        if ([fileManager fileExistsAtPath: backgroundVideo]) {
-            videoBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundVideo options:NSDataReadingMappedIfSafe error:nil];
+        if ((0 < backgroundVideo.length) && [fileManager fileExistsAtPath: backgroundVideo]) {
+            NSData *videoBackgroundShare = [[NSData alloc] initWithContentsOfFile:backgroundVideo options:NSDataReadingMappedIfSafe error:nil];
             [pasteboardItems setObject:videoBackgroundShare forKey:[NSString stringWithFormat:@"%@.backgroundVideo",destination]];
         }
 
-        NSURL *urlScheme = [NSURL URLWithString:[NSString stringWithFormat:@"%@://share?source_application=%@", stories,appId]];
+        NSURL *urlScheme = [NSURL URLWithString:[NSString stringWithFormat:@"%@://share?source_application=%@", stories, appId]];
         
-        if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
+        if ((urlScheme != nil) && [[UIApplication sharedApplication] canOpenURL:urlScheme]) {
 
             if (@available(iOS 10.0, *)) {
             NSDictionary *pasteboardOptions = @{UIPasteboardOptionExpirationDate : [[NSDate date] dateByAddingTimeInterval:60 * 5]};
@@ -99,24 +100,23 @@
     }
     else if ([@"copyToClipboard" isEqualToString:call.method]) {
         
-        NSString *content = call.arguments[@"content"];
+        NSString *content = _stringValue(call.arguments[@"content"]);
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         //assigning content to pasteboard
-         if (![content isKindOfClass:[NSNull class]]) {
+         if (0 < content.length) {
             pasteboard.string = content;
         }
         //assigning image to pasteboard
-        NSString *image = call.arguments[@"image"];
-        UIImage *imageData;
-        if ([[NSFileManager defaultManager] fileExistsAtPath: image]) {
-            imageData = [[UIImage alloc] initWithContentsOfFile:image];
+        NSString *image = _stringValue(call.arguments[@"image"]);
+        if ((0 < image.length) && [[NSFileManager defaultManager] fileExistsAtPath: image]) {
+            UIImage *imageData = [[UIImage alloc] initWithContentsOfFile:image];
             pasteboard.image = imageData;
         }
         
         result(@"success");
         
     } else if ([@"shareTwitter" isEqualToString:call.method]) {
-        NSString *captionText = call.arguments[@"captionText"];
+        NSString *captionText = _stringValue(call.arguments[@"captionText"]);
         
         NSString *urlSchemeTwitter = [NSString stringWithFormat:@"twitter://post?message=%@",captionText];
         NSString* urlTextEscaped = [urlSchemeTwitter stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
@@ -129,81 +129,41 @@
         }
     
     } else if ([@"shareSms" isEqualToString:call.method]) {
-        NSString *msg = call.arguments[@"message"];
-        NSString *urlstring = call.arguments[@"urlLink"];
-        NSString *trailingText = call.arguments[@"trailingText"];
-
-        NSURL *urlScheme = [NSURL URLWithString:@"sms://"];
-
-        NSString* urlTextEscaped = [urlstring stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-        NSURL *url = [NSURL URLWithString: urlTextEscaped];
-        //check if it contains a link
-        if ( [ [url absoluteString]  length] == 0 ) {
-            //if it doesn't contains a link
-            NSString *urlSchemeSms = [NSString stringWithFormat:@"sms:?&body=%@",msg];
-            NSURL *urlScheme = [NSURL URLWithString:urlSchemeSms];
-            if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
-                if (@available(iOS 10.0, *)) {
-                    [[UIApplication sharedApplication] openURL:urlScheme options:@{} completionHandler:nil];
-                    result(@"success");
-                } else {
-                    result(@"error");
-                }
-            } else {
-                result(@"error");
-            }
-        } else {
-            //if it does contains a link
-            //check if trailing text equals null
-            if ( [ trailingText   length] == 0 ) {
-                //if trailing text is null
-                //url scheme with normal text message
-                NSString *urlSchemeSms = [NSString stringWithFormat:@"sms:?&body=%@",msg];
-                //appending url with normal text and url scheme
-                NSString *urlWithLink = [urlSchemeSms stringByAppendingString:[url absoluteString]];
-                //final urlscheme
-                NSURL *urlSchemeMsg = [NSURL URLWithString:urlWithLink];
-                if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
-                    if (@available(iOS 10.0, *)) {
-                        [[UIApplication sharedApplication] openURL:urlSchemeMsg options:@{} completionHandler:nil];
-                        result(@"success");
-                    } else {
-                        result(@"error");
-                    }
-                } else {
-                    result(@"error");
-                }
-            } else {
-                //if trailing text is not null
-                NSString *urlSchemeSms = [NSString stringWithFormat:@"sms:?&body=%@",msg];
-                //appending url with normal text and url scheme
-                NSString *urlWithLink = [urlSchemeSms stringByAppendingString:[url absoluteString]];
-                NSString *finalUrl = [urlWithLink stringByAppendingString:trailingText];
-
-                //final urlscheme
-                NSURL *urlSchemeMsg = [NSURL URLWithString:finalUrl];
-                if ([[UIApplication sharedApplication] canOpenURL:urlScheme]) {
-                    if (@available(iOS 10.0, *)) {
-                        [[UIApplication sharedApplication] openURL:urlSchemeMsg options:@{} completionHandler:nil];
-                        result(@"success");
-                    } else {
-                        result(@"error");
-                    }
-                } else {
-                    result(@"error");
-
-                }
-            }
+        NSString *msg = _stringValue(call.arguments[@"message"]);
+        NSString *urlLink = _stringValue(call.arguments[@"urlLink"]);
+        NSString *trailingText = _stringValue(call.arguments[@"trailingText"]);
         
-        }
+        NSMutableString *smsBody = [[NSMutableString alloc] init];
+        if (0 < msg.length) {
+	        [smsBody appendString: msg];
+				}
+				if (0 < urlLink.length) {
+	        [smsBody appendString: urlLink];
+				}
+				if (0 < trailingText.length) {
+	        [smsBody appendString: trailingText];
+				}
+        NSString *smsBodyEscaped = [smsBody stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+				NSString *smsUrlString = [NSString stringWithFormat:@"sms:&body=%@", smsBodyEscaped];
+        NSURL *smsUrl = [NSURL URLWithString: smsUrlString];
+				if ((smsUrl != nil) && [[UIApplication sharedApplication] canOpenURL:smsUrl]) {
+						if (@available(iOS 10.0, *)) {
+								[[UIApplication sharedApplication] openURL:smsUrl options:@{} completionHandler:nil];
+								result(@"success");
+						} else {
+								result(@"error");
+						}
+				} else {
+					result(@"error");
+				}
     } else if ([@"shareSlack" isEqualToString:call.method]) {
         //NSString *content = call.arguments[@"content"];
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareWhatsapp" isEqualToString:call.method]) {
-        NSString *content = call.arguments[@"content"];
+        NSString *content = _stringValue(call.arguments[@"content"]);
         NSString * urlWhats = [NSString stringWithFormat:@"whatsapp://send?text=%@",content];
         NSURL * whatsappURL = [NSURL URLWithString:[urlWhats stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-        if ([[UIApplication sharedApplication] canOpenURL: whatsappURL]) {
+        if ((whatsappURL != nil) && [[UIApplication sharedApplication] canOpenURL: whatsappURL]) {
             [[UIApplication sharedApplication] openURL: whatsappURL];
             result(@"success");
         } else {
@@ -211,10 +171,10 @@
         }
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareTelegram" isEqualToString:call.method]) {
-        NSString *content = call.arguments[@"content"];
+        NSString *content = _stringValue(call.arguments[@"content"]);
         NSString * urlScheme = [NSString stringWithFormat:@"tg://msg?text=%@",content];
         NSURL * telegramURL = [NSURL URLWithString:[urlScheme stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-        if ([[UIApplication sharedApplication] canOpenURL: telegramURL]) {
+        if ((telegramURL != nil) && [[UIApplication sharedApplication] canOpenURL: telegramURL]) {
             [[UIApplication sharedApplication] openURL: telegramURL];
             result(@"success");
         } else {
@@ -222,30 +182,35 @@
         }
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareOptions" isEqualToString:call.method]) {
-        NSString *content = call.arguments[@"content"];
-        NSString *image = call.arguments[@"image"];
-        //checking if it contains image file
-        if ([image isEqual:[NSNull null]] || [ image  length] == 0 ) {
-            //when image is not included
-            NSArray *objectsToShare = @[content];
-            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
-            UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
-            [controller presentViewController:activityVC animated:YES completion:nil];
-            result([NSNumber numberWithBool:YES]);
-        } else {
-            //when image file is included
-            NSFileManager *fileManager = [NSFileManager defaultManager];
-            BOOL isFileExist = [fileManager fileExistsAtPath: image];
-            UIImage *imgShare;
-            if (isFileExist) {
-                imgShare = [[UIImage alloc] initWithContentsOfFile:image];
-            }
-            NSArray *objectsToShare = @[content, imgShare];
-            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
-            UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
-            [controller presentViewController:activityVC animated:YES completion:nil];
-            result([NSNumber numberWithBool:YES]);
+        NSString *content = _stringValue(call.arguments[@"content"]);
+        NSString *image = _stringValue(call.arguments[@"image"]);
+        NSMutableArray *objectsToShare = [[NSMutableArray alloc] init];
+        
+				//checking if it contains text
+        if (0 < content.length) {
+        	[objectsToShare addObject:content];
         }
+				//checking if it contains image file
+        if (0 < image.length) {
+						//when image file is included
+						NSFileManager *fileManager = [NSFileManager defaultManager];
+						BOOL isFileExist = [fileManager fileExistsAtPath: image];
+						UIImage *imgShare = isFileExist ? [[UIImage alloc] initWithContentsOfFile:image] : nil;
+						if (imgShare != nil) {
+		        	[objectsToShare addObject:imgShare];
+						}
+				}
+				
+				if (0 < objectsToShare.count) {
+						UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
+						UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
+						[controller presentViewController:activityVC animated:YES completion:nil];
+						result([NSNumber numberWithBool:YES]);
+				}
+				else {
+						result([NSNumber numberWithBool:NO]);
+				}
+
     } else if ([@"checkInstalledApps" isEqualToString:call.method]) {
         NSMutableDictionary *installedApps = [[NSMutableDictionary alloc] init];
         if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"instagram-stories://"]]) {
@@ -290,3 +255,7 @@
 }
 
 @end
+
+NSString* _stringValue(NSObject* value) {
+	return [value isKindOfClass:[NSString class]] ? value : nil;
+}

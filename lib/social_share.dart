@@ -136,11 +136,18 @@ class SocialShare {
         args = <String, dynamic>{
           "message": message,
         };
-      } else {
+      }
+      else if (trailingText == null) {
         args = <String, dynamic>{
-          "message": message + " ",
+          "message": message,
           "urlLink": Uri.parse(url).toString(),
-          "trailingText": trailingText
+        };
+      }
+      else {
+        args = <String, dynamic>{
+          "message": message,
+          "urlLink": Uri.parse(url).toString(),
+          "trailingText": trailingText,
         };
       }
     } else if (Platform.isAndroid) {
