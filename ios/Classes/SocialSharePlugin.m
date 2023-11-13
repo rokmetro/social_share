@@ -183,30 +183,35 @@ NSString* _stringValue(NSObject* value);
         }
         result([NSNumber numberWithBool:YES]);
     } else if ([@"shareOptions" isEqualToString:call.method]) {
-        NSString *content = call.arguments[@"content"];
-        NSString *image = call.arguments[@"image"];
-        //checking if it contains image file
-        if ([image isEqual:[NSNull null]] || [ image  length] == 0 ) {
-            //when image is not included
-            NSArray *objectsToShare = @[content];
-            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
-            UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
-            [controller presentViewController:activityVC animated:YES completion:nil];
-            result([NSNumber numberWithBool:YES]);
-        } else {
-            //when image file is included
-            NSFileManager *fileManager = [NSFileManager defaultManager];
-            BOOL isFileExist = [fileManager fileExistsAtPath: image];
-            UIImage *imgShare;
-            if (isFileExist) {
-                imgShare = [[UIImage alloc] initWithContentsOfFile:image];
-            }
-            NSArray *objectsToShare = @[content, imgShare];
-            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
-            UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
-            [controller presentViewController:activityVC animated:YES completion:nil];
-            result([NSNumber numberWithBool:YES]);
+        NSString *content = _stringValue(call.arguments[@"content"]);
+        NSString *image = (call.arguments[@"image"]);
+        NSMutableArray *objectsToShare = [[NSMutableArray alloc] init];
+        
+				//checking if it contains text
+        if (0 < content.length) {
+        	[objectsToShare addObject:content];
         }
+				//checking if it contains image file
+        if (0 < image.length) {
+						//when image file is included
+						NSFileManager *fileManager = [NSFileManager defaultManager];
+						BOOL isFileExist = [fileManager fileExistsAtPath: image];
+						UIImage *imgShare = isFileExist ? [[UIImage alloc] initWithContentsOfFile:image] : nil;
+						if (imgShare != nil) {
+		        	[objectsToShare addObject:imgShare];
+						}
+				}
+				
+				if (0 < objectsToShare.count) {
+						UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
+						UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
+						[controller presentViewController:activityVC animated:YES completion:nil];
+						result([NSNumber numberWithBool:YES]);
+				}
+				else {
+						result([NSNumber numberWithBool:NO]);
+				}
+
     } else if ([@"checkInstalledApps" isEqualToString:call.method]) {
         NSMutableDictionary *installedApps = [[NSMutableDictionary alloc] init];
         if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"instagram-stories://"]]) {
