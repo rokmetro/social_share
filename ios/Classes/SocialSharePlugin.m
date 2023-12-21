@@ -204,7 +204,9 @@ NSString* _stringValue(NSObject* value);
 				if (0 < objectsToShare.count) {
 						UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare applicationActivities:nil];
 						UIViewController *controller =[UIApplication sharedApplication].keyWindow.rootViewController;
-						[controller presentViewController:activityVC animated:YES completion:nil];
+                        activityVC.popoverPresentationController.sourceView = [UIApplication sharedApplication].keyWindow;
+                        activityVC.popoverPresentationController.sourceRect = CGRectMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/4, 0, 0);
+                        [controller presentViewController:activityVC animated:YES completion:nil];
 						result([NSNumber numberWithBool:YES]);
 				}
 				else {
