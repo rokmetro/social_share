@@ -100,13 +100,10 @@ class SocialShare {
       return null;
     }
 
-
-    if (Platform.isAndroid) {
-      if (imagePath != null) {
-        var stickerFilename = "stickerAsset.png";
-        await reSaveImage(imagePath, stickerFilename);
-        _imagePath = stickerFilename;
-      }
+    if (imagePath != null) {
+      var stickerFilename = "stickerAsset.png";
+      await reSaveImage(imagePath, stickerFilename);
+      _imagePath = stickerFilename;
     }
 
     Map<String, dynamic> args = <String, dynamic>{
