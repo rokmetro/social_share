@@ -167,7 +167,20 @@ class SocialSharePlugin:FlutterPlugin, MethodCallHandler, ActivityAware {
                 return
             }
             result.success("success")
-        } 
+        }
+        else if(call.method == "sharePinterest") {
+            val sharePintrestIntent = Intent(Intent.ACTION_SEND)
+            val image: String? = call.argument("Image")
+            val imagefile =  File(activeContext!!.cacheDir,image)
+            val imageFileUri = FileProvider.getUriForFile(activeContext!!, activeContext!!.applicationContext.packageName + ".com.shekarmudaliyar.social_share", imagefile)
+            sharePintrestIntent.setPackage("com.pinterest")
+            sharePintrestIntent.putExtra(Intent.EXTRA_STREAM, imageFileUri)
+            sharePintrestIntent.setType("image/*")
+            activity!!.startActivity(sharePintrestIntent)
+
+//            startActivityForResult(sharePintrestIntent, PINTEREST)
+
+        }
         else if (call.method == "shareWhatsapp") {
             //shares content on WhatsApp
             val content: String? = call.argument("content")
@@ -245,6 +258,7 @@ class SocialSharePlugin:FlutterPlugin, MethodCallHandler, ActivityAware {
             apps["twitter"] = packages.any  { it.packageName.toString().contentEquals("com.twitter.android") }
             apps["whatsapp"] = packages.any  { it.packageName.toString().contentEquals("com.whatsapp") }
             apps["telegram"] = packages.any  { it.packageName.toString().contentEquals("org.telegram.messenger") }
+            apps["pinterest"] = packages.any  { it.packageName.toString().contentEquals("com.pinterest") }
 
             result.success(apps)
         } else {

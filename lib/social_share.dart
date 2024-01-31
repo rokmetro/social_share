@@ -91,6 +91,32 @@ class SocialShare {
     return response;
   }
 
+  static Future<String?> sharePinterest({
+    required String? imagePath,
+  }) async {
+    var _imagePath = imagePath;
+
+    if(Platform.isAndroid == false) {
+      return null;
+    }
+
+
+    if (Platform.isAndroid) {
+      if (imagePath != null) {
+        var stickerFilename = "stickerAsset.png";
+        await reSaveImage(imagePath, stickerFilename);
+        _imagePath = stickerFilename;
+      }
+    }
+
+    Map<String, dynamic> args = <String, dynamic>{
+      "Image": _imagePath,
+    };
+
+    final String? response = await _channel.invokeMethod("sharePinterest", args);
+    return response;
+  }
+
   static Future<String?> shareTwitter(
     String captionText, {
     List<String>? hashtags,
