@@ -169,6 +169,7 @@ class SocialSharePlugin:FlutterPlugin, MethodCallHandler, ActivityAware {
             result.success("success")
         }
         else if(call.method == "sharePinterest") {
+
             val sharePintrestIntent = Intent(Intent.ACTION_SEND)
             val image: String? = call.argument("Image")
             val imagefile =  File(activeContext!!.cacheDir,image)
@@ -177,8 +178,6 @@ class SocialSharePlugin:FlutterPlugin, MethodCallHandler, ActivityAware {
             sharePintrestIntent.putExtra(Intent.EXTRA_STREAM, imageFileUri)
             sharePintrestIntent.setType("image/*")
             activity!!.startActivity(sharePintrestIntent)
-
-//            startActivityForResult(sharePintrestIntent, PINTEREST)
 
         }
         else if (call.method == "shareWhatsapp") {
