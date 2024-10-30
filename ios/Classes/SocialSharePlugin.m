@@ -35,6 +35,8 @@ NSString* _stringValue(NSObject* value);
         NSString *backgroundImage = _stringValue(call.arguments[@"backgroundImage"]);
         NSString *backgroundVideo = _stringValue(call.arguments[@"backgroundVideo"]);
         NSString *appId = _stringValue(call.arguments[@"appId"]);
+        NSString *linkURL = _stringValue(call.arguments[@"linkURL"]);
+        NSString *linkText = _stringValue(call.arguments[@"linkText"]);
         
 
         NSFileManager *fileManager = [NSFileManager defaultManager];
@@ -67,6 +69,14 @@ NSString* _stringValue(NSObject* value);
         
         if ((0 < appId.length) && [@"shareFacebookStory" isEqualToString:call.method]) {
             [pasteboardItems setObject:appId forKey:[NSString stringWithFormat:@"%@.appID", destination]];
+        }
+
+        if (0 < linkURL.length) {
+            [pasteboardItems setObject:linkURL forKey:[NSString stringWithFormat:@"%@.linkURL", destination]];
+        }
+
+        if (0 < linkText.length) {
+            [pasteboardItems setObject:linkText forKey:[NSString stringWithFormat:@"%@.linkText", destination]];
         }
         
         //if you have a background image
