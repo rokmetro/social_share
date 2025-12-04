@@ -1,5 +1,6 @@
 ## Unreleased
 - Fixed crashes in iOS native handling  [#173](https://github.com/rokmetro/vogue-app/issues/173)
+- Added optional `image` parameter to `shareSms` so SMS shares on iOS and Android can include attachments.
 
 ## 2.3.1
 
