@@ -164,31 +164,31 @@ class SocialShare {
   }
 
   static Future<String?> shareSms(String message,
-      {String? url, String? trailingText}) async {
+      {String? url, String? trailingText, String? image}) async {
     Map<String, dynamic>? args;
     if (Platform.isIOS) {
-      if (url == null) {
-        args = <String, dynamic>{
-          "message": message,
-        };
-      }
-      else if (trailingText == null) {
-        args = <String, dynamic>{
-          "message": message,
-          "urlLink": Uri.parse(url).toString(),
-        };
-      }
-      else {
-        args = <String, dynamic>{
-          "message": message,
-          "urlLink": Uri.parse(url).toString(),
-          "trailingText": trailingText,
-        };
-      }
-    } else if (Platform.isAndroid) {
       args = <String, dynamic>{
-        "message": message + (url ?? '') + (trailingText ?? ''),
+        "message": message,
+        if (url != null) "urlLink": Uri.parse(url).toString(),
+        if (trailingText != null && url != null) "trailingText": trailingText,
+        if (image != null) "image": image,
       };
+    } else if (Platform.isAndroid) {
+      final combinedMessage = message + (url ?? '') + (trailingText ?? '');
+      args = <String, dynamic>{
+        "message": combinedMessage,
+      };
+      if (image != null) {
+        final int timestamp = DateTime.now().microsecondsSinceEpoch;
+        String extension = '';
+        final int extensionIndex = image.lastIndexOf('.');
+        if (extensionIndex != -1 && extensionIndex < image.length - 1) {
+          extension = image.substring(extensionIndex);
+        }
+        final String androidSmsImage = 'shareSmsImage_$timestamp$extension';
+        await reSaveImage(image, androidSmsImage);
+        args["image"] = androidSmsImage;
+      }
     }
     final String? version = await _channel.invokeMethod('shareSms', args);
     return version;

@@ -138,6 +138,13 @@ SocialShare.shareSms("This is Social Share Sms example");
 
 //with url link in message
 SocialShare.shareSms("This is Social Share Sms example",url: "https://your-url-here/");
+
+//with link and an image attachment
+SocialShare.shareSms(
+  "This is Social Share Sms example",
+  url: "https://your-url-here/",
+  image: "<absolute-path-to-image>",
+);
 ```
 
 #### shareWhatsapp

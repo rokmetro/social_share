@@ -139,33 +139,91 @@ NSString* _stringValue(NSObject* value);
         }
     
     } else if ([@"shareSms" isEqualToString:call.method]) {
+        if (![MFMessageComposeViewController canSendText]) {
+            result(@"error");
+            return;
+        }
+        
         NSString *msg = _stringValue(call.arguments[@"message"]);
         NSString *urlLink = _stringValue(call.arguments[@"urlLink"]);
         NSString *trailingText = _stringValue(call.arguments[@"trailingText"]);
+        NSString *imagePath = _stringValue(call.arguments[@"image"]);
+        
+        NSData *imageData = nil;
+        NSString *imageFilename = nil;
+        NSString *imageTypeIdentifier = nil;
+        if ((0 < imagePath.length) && [[NSFileManager defaultManager] fileExistsAtPath:imagePath]) {
+            imageData = [[NSData alloc] initWithContentsOfFile:imagePath];
+            imageFilename = [imagePath lastPathComponent] ?: @"image";
+            NSString *extension = [[imageFilename pathExtension] lowercaseString];
+            if ([extension isEqualToString:@"png"]) {
+                imageTypeIdentifier = @"public.png";
+            } else if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) {
+                imageTypeIdentifier = @"public.jpeg";
+            } else {
+                imageTypeIdentifier = @"public.data";
+            }
+        }
+
+        if ((imageData != nil) && ![MFMessageComposeViewController canSendAttachments]) {
+            result(@"error");
+            return;
+        }
         
         NSMutableString *smsBody = [[NSMutableString alloc] init];
         if (0 < msg.length) {
-	        [smsBody appendString: msg];
-				}
-				if (0 < urlLink.length) {
-	        [smsBody appendString: urlLink];
-				}
-				if (0 < trailingText.length) {
-	        [smsBody appendString: trailingText];
-				}
-        NSString *smsBodyEscaped = [smsBody stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
-				NSString *smsUrlString = [NSString stringWithFormat:@"sms:&body=%@", smsBodyEscaped];
-        NSURL *smsUrl = [NSURL URLWithString: smsUrlString];
-				if ((smsUrl != nil) && [[UIApplication sharedApplication] canOpenURL:smsUrl]) {
-						if (@available(iOS 10.0, *)) {
-								[[UIApplication sharedApplication] openURL:smsUrl options:@{} completionHandler:nil];
-								result(@"success");
-						} else {
-								result(@"error");
-						}
-				} else {
-					result(@"error");
-				}
+            [smsBody appendString:msg];
+        }
+        if (0 < urlLink.length) {
+            if (0 < smsBody.length) {
+                [smsBody appendString:@" "];
+            }
+            [smsBody appendString:urlLink];
+        }
+        if (0 < trailingText.length) {
+            if (0 < smsBody.length) {
+                [smsBody appendString:@" "];
+            }
+            [smsBody appendString:trailingText];
+        }
+        
+        MFMessageComposeViewController *messageVC = [[MFMessageComposeViewController alloc] init];
+        messageVC.messageComposeDelegate = self;
+        messageVC.body = smsBody;
+        if (imageData != nil) {
+            NSString *filename = imageFilename ?: @"image";
+            NSString *typeIdentifier = imageTypeIdentifier ?: @"public.data";
+            [messageVC addAttachmentData:imageData typeIdentifier:typeIdentifier filename:filename];
+        }
+
+        UIWindow *window = nil;
+        if (@available(iOS 13.0, *)) {
+            for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                if (scene.activationState == UISceneActivationStateForegroundActive) {
+                    for (UIWindow *w in scene.windows) {
+                        if (w.isKeyWindow) {
+                            window = w;
+                            break;
+                        }
+                    }
+                    if (window != nil) break;
+                }
+            }
+        } else {
+            window = [UIApplication sharedApplication].keyWindow;
+        }
+        UIViewController *controller = window.rootViewController;
+        while (controller.presentedViewController != nil) {
+            controller = controller.presentedViewController;
+        }
+        
+        if (controller == nil) {
+            result(@"error");
+            return;
+        }
+        
+        [controller presentViewController:messageVC animated:YES completion:nil];
+        result(@"success");
     } else if ([@"shareSlack" isEqualToString:call.method]) {
         //NSString *content = call.arguments[@"content"];
         result([NSNumber numberWithBool:YES]);
@@ -264,6 +322,11 @@ NSString* _stringValue(NSObject* value);
     } else {
         result(FlutterMethodNotImplemented);
     }
+}
+
+- (void)messageComposeViewController:(MFMessageComposeViewController *)controller didFinishWithResult:(MessageComposeResult)composeResult {
+    (void)composeResult;
+    [controller dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end
