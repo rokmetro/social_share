@@ -197,35 +197,47 @@ class SocialSharePlugin:FlutterPlugin, MethodCallHandler, ActivityAware {
             //shares content on sms
             val content: String? = call.argument("message")
             val image: String? = call.argument("image")
-            val imageFile = if (!image.isNullOrEmpty()) File(activeContext!!.cacheDir, image) else null
+            val smsContext = activeContext ?: context
+            val currentActivity = activity
+
+            if (smsContext == null || currentActivity == null || content == null) {
+                result.success("error")
+                return
+            }
+
+            val cacheDir = smsContext.cacheDir
+            val imageFile = if (!image.isNullOrEmpty()) File(cacheDir, image) else null
             if (imageFile != null && imageFile.exists()) {
-                val imageFileUri = FileProvider.getUriForFile(activeContext!!, activeContext!!.applicationContext.packageName + ".com.shekarmudaliyar.social_share", imageFile)
-                val sendIntent = Intent(Intent.ACTION_SEND)
-                sendIntent.type = "image/*"
-                sendIntent.putExtra("sms_body", content)
-                sendIntent.putExtra(Intent.EXTRA_TEXT, content)
-                sendIntent.putExtra(Intent.EXTRA_STREAM, imageFileUri)
-                sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val authority = smsContext.applicationContext.packageName + ".com.shekarmudaliyar.social_share"
+                val imageFileUri = FileProvider.getUriForFile(smsContext, authority, imageFile)
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "image/*"
+                    putExtra("sms_body", content)
+                    putExtra(Intent.EXTRA_TEXT, content)
+                    putExtra(Intent.EXTRA_STREAM, imageFileUri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(activeContext!!)
+                    val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(smsContext)
                     if (defaultSmsPackage != null) {
-                        sendIntent.setPackage(defaultSmsPackage)
+                        sendIntent.`package` = defaultSmsPackage
                     }
                 }
                 try {
-                    activity!!.startActivity(sendIntent)
+                    currentActivity.startActivity(sendIntent)
                     result.success("success")
                 } catch (ex: ActivityNotFoundException) {
                     result.success("error")
                 }
             } else {
-                val intent = Intent(Intent.ACTION_SENDTO)
-                intent.addCategory(Intent.CATEGORY_DEFAULT)
-                intent.type = "vnd.android-dir/mms-sms"
-                intent.data = Uri.parse("sms:" )
-                intent.putExtra("sms_body", content)
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                    type = "vnd.android-dir/mms-sms"
+                    data = Uri.parse("sms:")
+                    putExtra("sms_body", content)
+                }
                 try {
-                    activity!!.startActivity(intent)
+                    currentActivity.startActivity(intent)
                     result.success("success")
                 } catch (ex: ActivityNotFoundException) {
                     result.success("error")

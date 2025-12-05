@@ -174,11 +174,18 @@ class SocialShare {
         if (image != null) "image": image,
       };
     } else if (Platform.isAndroid) {
+      final combinedMessage = message + (url ?? '') + (trailingText ?? '');
       args = <String, dynamic>{
-        "message": message + (url ?? '') + (trailingText ?? ''),
+        "message": combinedMessage,
       };
       if (image != null) {
-        const androidSmsImage = "shareSmsImage.png";
+        final int timestamp = DateTime.now().microsecondsSinceEpoch;
+        String extension = '';
+        final int extensionIndex = image.lastIndexOf('.');
+        if (extensionIndex != -1 && extensionIndex < image.length - 1) {
+          extension = image.substring(extensionIndex);
+        }
+        final String androidSmsImage = 'shareSmsImage_$timestamp$extension';
         await reSaveImage(image, androidSmsImage);
         args["image"] = androidSmsImage;
       }

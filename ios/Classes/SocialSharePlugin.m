@@ -175,9 +175,15 @@ NSString* _stringValue(NSObject* value);
             [smsBody appendString:msg];
         }
         if (0 < urlLink.length) {
+            if (0 < smsBody.length) {
+                [smsBody appendString:@" "];
+            }
             [smsBody appendString:urlLink];
         }
         if (0 < trailingText.length) {
+            if (0 < smsBody.length) {
+                [smsBody appendString:@" "];
+            }
             [smsBody appendString:trailingText];
         }
         
@@ -189,8 +195,23 @@ NSString* _stringValue(NSObject* value);
             NSString *typeIdentifier = imageTypeIdentifier ?: @"public.data";
             [messageVC addAttachmentData:imageData typeIdentifier:typeIdentifier filename:filename];
         }
-        
-        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+
+        UIWindow *window = nil;
+        if (@available(iOS 13.0, *)) {
+            for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                if (scene.activationState == UISceneActivationStateForegroundActive) {
+                    for (UIWindow *w in scene.windows) {
+                        if (w.isKeyWindow) {
+                            window = w;
+                            break;
+                        }
+                    }
+                    if (window != nil) break;
+                }
+            }
+        } else {
+            window = [UIApplication sharedApplication].keyWindow;
+        }
         UIViewController *controller = window.rootViewController;
         while (controller.presentedViewController != nil) {
             controller = controller.presentedViewController;
